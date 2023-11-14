@@ -22,6 +22,7 @@ enum CAN_SPEED BaudRate;
 volatile bool interrupt = false;
 struct can_frame frame;
 
+//CAN interrupt
 void irqHandler() {
     interrupt = true;
 }
