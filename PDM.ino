@@ -5,9 +5,9 @@
 
 //General setup
 #define BaseCanID 0x500
-#define UpdateRate 10 //Frontend thermocouple scan rate and CAN-message update rate in Hz.
+#define UpdateRate 10 //CAN-message update rate in Hz.
 #define serialDebug false
-#define defaultOutputState HIGH
+#define defaultOutputState LOW
 
 struct OutputChannel{
    int SwitchOutputChannel;
@@ -17,6 +17,7 @@ struct OutputChannel{
 };
 
 struct can_frame canMsg1;
+struct can_frame canMsg2;
 enum CAN_SPEED BaudRate;
 
 volatile bool interrupt = false;
@@ -52,8 +53,6 @@ int sensorValue = 0;  // value read from the pot
 int outputValue = 0;  // value output to the PWM (analog out)
 
 MCP2515 mcp2515(CAN_ChipSelect);
-
-void setup() {
   OutputChannel CHList[4] = {
   {3, 5, 1, (A0, 5.0, 1023, 100)},
   {6, 5, 1, (A1, 5.0, 1023, 100)}, 
@@ -61,6 +60,13 @@ void setup() {
   {4, 5, 1, (A3, 5.0, 1023, 100)},
   };
 
+ ACS712 ACS0(A0, 5.0, 1023, 100);
+  ACS712 ACS1(A1, 5.0, 1023, 100);
+   ACS712 ACS2(A2, 5.0, 1023, 100);
+    ACS712 ACS3(A3, 5.0, 1023, 100);
+
+void setup() {
+ 
   pinMode(DI1, INPUT_PULLUP);
   pinMode(DI2, INPUT_PULLUP);
 
@@ -91,6 +97,9 @@ void setup() {
   canMsg1.data[6] = 0x00;
   canMsg1.data[7] = 0x00;
 
+  canMsg2.can_id  = canid+1;
+  canMsg2.can_dlc = 8;
+
   Serial.println("Initializing CAN module...");
   mcp2515.reset();
   mcp2515.setBitrate(BaudRate,MCP_8MHZ);
@@ -103,16 +112,35 @@ void setup() {
     //CHList[i].ACS.autoMidPoint(); // Calibrate current sensors
   } 
 
+  ACS0.autoMidPoint(); // Calibrate current sensors
+  ACS1.autoMidPoint(); // Calibrate current sensors
+  ACS2.autoMidPoint(); // Calibrate current sensors
+  ACS3.autoMidPoint(); // Calibrate current sensors
+
   pinMode(CAN_Interrupt, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(CAN_Interrupt), irqHandler, FALLING);
 }
 
 void loop() {
-  // int mA = ACS.mA_DC();
+  int mA0 = ACS0.mA_DC();
+  int mA1 = ACS1.mA_DC();
+  int mA2 = ACS2.mA_DC();
+  int mA3 = ACS3.mA_DC();
+
+  canMsg2.data[0] = (mA0 >> 8);
+  canMsg2.data[1] = (mA0 & 0xFF);
+  canMsg2.data[2] = (mA1 >> 8);
+  canMsg2.data[3] = (mA1 & 0xFF);
+  canMsg2.data[4] = (mA2 >> 8);
+  canMsg2.data[5] = (mA2 & 0xFF);
+  canMsg2.data[6] = (mA3 >> 8);
+  canMsg2.data[7] = (mA3 & 0xFF);
+
   // read the analog in value:
-  // sensorValue = analogRead(analogInPin5);
+  sensorValue = analogRead(analogInPin5);
+  int test = analogRead(A0);
   // map it to the range of the analog out:
-  // outputValue = map(sensorValue, 0, 1023, 0, 245); //Scaling for Battery reference
+  outputValue = map(sensorValue, 0, 1023, 0, 245); //Scaling for Battery reference
   // change the analog out value:
   int reading1 = digitalRead(DI1);
   int reading2 = digitalRead(DI2);
@@ -124,16 +152,17 @@ void loop() {
   Serial.print(" Dig2 = ");
   Serial.print(reading2);
   Serial.print(" Current = ");
-  //Serial.print(mA);
+  Serial.print(test);
   Serial.print("\t Battery reference = ");
   Serial.println(outputValue);
 
 
   canMsg1.data[0] = reading1;
+  digitalWrite(CHList[0].SwitchOutputChannel, !reading1);  // Set Default state
 
 
-  //mcp2515.sendMessage(&canMsg1);
-  //mcp2515.sendMessage(&canMsg2);
+  mcp2515.sendMessage(&canMsg1);
+  mcp2515.sendMessage(&canMsg2);
   delay(float(1)/UpdateRate*1000); //Crude wait, should use a dynamic time offset depending.
 
   if (interrupt) {
