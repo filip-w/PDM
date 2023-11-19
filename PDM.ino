@@ -154,17 +154,20 @@ void loop() {
   Serial.print(" Current = ");
   Serial.print(mA3);
   Serial.print("\t Battery reference = ");
-  Serial.println(outputValue);
+  Serial.print(outputValue);
+  Serial.print("\t Int = ");
+  Serial.println(interrupt);
 
 
   canMsg1.data[0] = reading1;
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
 
+  mcp2515.sendMessage(&canMsg1);
+  mcp2515.sendMessage(&canMsg2);
+
 
   if (interrupt) {
-    Serial.println("Rx msg!");
     interrupt = false;
-
     uint8_t irq = mcp2515.getInterrupts();
 
     if (irq & MCP2515::CANINTF_RX0IF) {
@@ -178,8 +181,8 @@ void loop() {
         // frame contains received from RXB1 message
       }
     }
+    Serial.print(" Rx msg! ");
+    Serial.println(irq);
   }
-mcp2515.sendMessage(&canMsg1);
-  mcp2515.sendMessage(&canMsg2);
   delay(float(1) / UpdateRate * 1000);  //Crude wait, should use a dynamic time offset depending.
 }
