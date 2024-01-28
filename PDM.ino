@@ -52,6 +52,9 @@ const int analogInPin8 = A7;  // Analog input 3 (NC on simulator)
 int sensorValue = 0;  // value read from the pot
 int outputValue = 0;  // value output to the PWM (analog out)
 
+int sensorValue2 = 0;  // value read from the pot
+int outputValue2 = 0;  // value output to the PWM (analog out)
+
 MCP2515 mcp2515(CAN_ChipSelect);
 OutputChannel CHList[4] = {
   { 3, 5, 1, (A0, 5.0, 1023, 100) },
@@ -146,6 +149,12 @@ void loop() {
   int reading2 = digitalRead(DI2);
   //int reading3 = digitalRead(CAN_Interrupt);
 
+
+    // read the analog in value:
+  sensorValue2 = analogRead(analogInPin6);
+  // map it to the range of the analog out:
+  outputValue2 = map(sensorValue2, 0, 1023, 0, 100);  //Scaling for Battery reference
+
   // print the results to the Serial Monitor:
   Serial.print("Dig1 = ");
   Serial.print(reading1);
@@ -155,12 +164,38 @@ void loop() {
   Serial.print(mA3);
   Serial.print("\t Battery reference = ");
   Serial.print(outputValue);
+  Serial.print("\t Pot = ");
+  Serial.print(outputValue2);
   Serial.print("\t Int = ");
   Serial.println(interrupt);
 
 
   canMsg1.data[0] = reading1;
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
+  
+  if (outputValue2 < 20){
+    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
+    Serial.println("state1");
+  } else if (outputValue2 >= 20 && outputValue2 < 50){
+    digitalWrite(CHList[0].SwitchOutputChannel, true);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
+        Serial.println("state2");
+  } else if (outputValue2 >= 50 && outputValue2 < 70){
+    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, true);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
+        Serial.println("state3");
+  }else {
+    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, true);  // felsök denna!
+        Serial.println("state4");
+  }
+
+
 
   mcp2515.sendMessage(&canMsg1);
   mcp2515.sendMessage(&canMsg2);
