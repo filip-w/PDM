@@ -2,6 +2,7 @@
 #include <mcp2515.h>
 #include <FIR.h>
 #include <ACS712.h>
+#include "SoftPWM.h"
 
 //General setup
 #define BaseCanID 0x500
@@ -69,6 +70,8 @@ ACS712 ACS2(A2, 5.0, 1023, 100);
 ACS712 ACS3(A3, 5.0, 1023, 100);
 
 void setup() {
+
+  SoftPWMBegin();
 
   pinMode(DI1, INPUT_PULLUP);
   pinMode(DI2, INPUT_PULLUP);
@@ -177,22 +180,18 @@ void loop() {
     digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
-    Serial.println("state1");
   } else if (outputValue2 >= 20 && outputValue2 < 50){
     digitalWrite(CHList[0].SwitchOutputChannel, true);  // Set Default state
     digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
-        Serial.println("state2");
   } else if (outputValue2 >= 50 && outputValue2 < 70){
     digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[1].SwitchOutputChannel, true);  // Set Default state
     digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
-        Serial.println("state3");
   }else {
     digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[2].SwitchOutputChannel, true);  // felsök denna!
-        Serial.println("state4");
   }
 
 
