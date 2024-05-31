@@ -36,6 +36,15 @@ BS_:
 BU_:
 
 
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ New_Signal_8 : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ New_Signal_7 : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 1280 Input: 8 Vector__XXX
+ SG_ AnalogInput1 : 15|16@0- (0.09765625,0) [0|100] "%" Vector__XXX
+ SG_ DigitalInput2 : 0|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ DigitalInput1 : 1|1@0+ (1,0) [0|1] "" Vector__XXX
+
 BO_ 1281 Current: 8 Vector__XXX
  SG_ currenntCh4 : 55|16@0- (1,0) [0|0] "mA" Vector__XXX
  SG_ currenntCh3 : 39|16@0- (1,0) [0|0] "mA" Vector__XXX
@@ -44,6 +53,7 @@ BO_ 1281 Current: 8 Vector__XXX
 
 
 
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
 BA_DEF_ BO_  "J1939FdTpADS" INT 0 52;
 BA_DEF_ BO_  "J1939FdTpADT" INT 0 255;
 BA_DEF_ BO_  "J1939PgAppearanceOnBus" ENUM  "Default","CAN_Extended","CANFD_Extended";
@@ -136,5 +146,6 @@ BA_DEF_DEF_  "ProtocolType" "J1939";
 BA_DEF_DEF_  "VFrameFormat" "J1939PG";
 BA_ "BusType" "CAN";
 BA_ "DBName" "PDM";
+BA_ "VFrameFormat" BO_ 1280 0;
 BA_ "VFrameFormat" BO_ 1281 0;
 

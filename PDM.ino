@@ -174,6 +174,8 @@ void loop() {
 
 
   canMsg1.data[0] = reading1;
+  canMsg1.data[1] = highByte(sensorValue2);
+  canMsg1.data[2] = lowByte(sensorValue2);
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
   
   if (outputValue2 < 20){
