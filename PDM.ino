@@ -19,6 +19,7 @@ struct OutputChannel {
 
 struct can_frame canMsg1;
 struct can_frame canMsg2;
+struct can_frame canMsg3;
 enum CAN_SPEED BaudRate;
 
 volatile bool interrupt = false;
@@ -55,6 +56,9 @@ int outputValue = 0;  // value output to the PWM (analog out)
 
 int sensorValue2 = 0;  // value read from the pot
 int outputValue2 = 0;  // value output to the PWM (analog out)
+
+int sensorValue3 = 0;  // value read from the pot
+int sensorValue4 = 0;  // value read from the pot
 
 MCP2515 mcp2515(CAN_ChipSelect);
 OutputChannel CHList[4] = {
@@ -106,6 +110,9 @@ void setup() {
   canMsg2.can_id = canid + 1;
   canMsg2.can_dlc = 8;
 
+  canMsg3.can_id = canid + 2;
+  canMsg3.can_dlc = 8;
+
   Serial.println("Initializing CAN module...");
   mcp2515.reset();
   mcp2515.setBitrate(BaudRate, MCP_8MHZ);
@@ -155,8 +162,10 @@ void loop() {
 
     // read the analog in value:
   sensorValue2 = analogRead(analogInPin6);
+  sensorValue3 = analogRead(analogInPin7);
+  sensorValue4 = analogRead(analogInPin8);
   // map it to the range of the analog out:
-  outputValue2 = map(sensorValue2, 0, 1023, 0, 100);  //Scaling for Battery reference
+  outputValue2 = map(sensorValue2, 0, 1023, 0, 100);  //Scaling for 0-100 %
 
   // print the results to the Serial Monitor:
   Serial.print("Dig1 = ");
@@ -172,10 +181,24 @@ void loop() {
   Serial.print("\t Int = ");
   Serial.println(interrupt);
 
-
+  //Prepare CAN message
+  
+  //message 1 "input"
+  //Digital input
   canMsg1.data[0] = reading1;
+  //Analog input
   canMsg1.data[1] = highByte(sensorValue2);
   canMsg1.data[2] = lowByte(sensorValue2);
+  canMsg1.data[3] = highByte(sensorValue3);
+  canMsg1.data[4] = lowByte(sensorValue3);
+  canMsg1.data[5] = highByte(sensorValue4);
+  canMsg1.data[6] = lowByte(sensorValue4);
+  
+  //message 3 "SystemInfo"
+  //Battery Voltage 
+  canMsg3.data[0] = highByte(sensorValue);
+  canMsg3.data[1] = lowByte(sensorValue);
+
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
   
   if (outputValue2 < 20){
@@ -200,6 +223,7 @@ void loop() {
 
   mcp2515.sendMessage(&canMsg1);
   mcp2515.sendMessage(&canMsg2);
+  mcp2515.sendMessage(&canMsg3);
 
 
   if (interrupt) {
