@@ -116,6 +116,11 @@ void setup() {
   Serial.println("Initializing CAN module...");
   mcp2515.reset();
   mcp2515.setBitrate(BaudRate, MCP_8MHZ);
+
+  //Filter out CAN configuration message
+  mcp2515.setFilterMask(MCP2515::MASK0, false, 0x1FFFFFFF);
+  mcp2515.setFilter(MCP2515::RXF0, false, 0x1);
+
   mcp2515.setNormalMode();
   Serial.println("DONE.");
 
@@ -233,12 +238,14 @@ void loop() {
     if (irq & MCP2515::CANINTF_RX0IF) {
       if (mcp2515.readMessage(MCP2515::RXB0, &frame) == MCP2515::ERROR_OK) {
         // frame contains received from RXB0 message
+        Serial.print(" RXB0 ");
       }
     }
 
     if (irq & MCP2515::CANINTF_RX1IF) {
       if (mcp2515.readMessage(MCP2515::RXB1, &frame) == MCP2515::ERROR_OK) {
         // frame contains received from RXB1 message
+        Serial.print(" RXB1 ");
       }
     }
     Serial.print(" Rx msg! ");
