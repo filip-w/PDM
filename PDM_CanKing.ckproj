@@ -147,7 +147,7 @@
       "id": 4,
       "componentData": {
         "componentId": "can-send-view",
-        "componentProps": "{\"channelIdentifier\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"frame\":{\"id\":0,\"data\":[0,0,0,0,0,0,0,0],\"canFrameFlags\":{\"flags\":[2]}},\"channelCollapsed\":false,\"idCollapsed\":false,\"frameCollapsed\":false}"
+        "componentProps": "{\"channelIdentifier\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"frame\":{\"id\":1283,\"data\":[0,0,0,0,0,0,0,0],\"canFrameFlags\":{\"flags\":[2]}},\"channelCollapsed\":false,\"idCollapsed\":false,\"frameCollapsed\":false}"
       }
     },
     {
@@ -168,7 +168,7 @@
       "id": 6,
       "componentData": {
         "componentId": "can-bus-statistics-view",
-        "componentProps": ""
+        "componentProps": "{\"channelId\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"channelCollapsed\":false,\"statisticsCollapsed\":false,\"statusCollapsed\":false}"
       }
     }
   ]

@@ -23,7 +23,16 @@ struct can_frame canMsg3;
 enum CAN_SPEED BaudRate;
 
 volatile bool interrupt = false;
-struct can_frame frame;
+struct can_frame ctrlMsg;
+bool ctrlMsgRecieved = false;
+int ResetFuseCh4  = 0;
+int ResetFuseCh3  = 0;
+int ResetFuseCh2  = 0;
+int ResetFuseCh1  = 0;
+int ControlCh1    = 0;
+int ControlCh2    = 0;
+int ControlCh3    = 0;
+int ControlCh4    = 0;
 
 //CAN interrupt
 void irqHandler() {
@@ -119,7 +128,7 @@ void setup() {
 
   //Filter out CAN configuration message
   mcp2515.setFilterMask(MCP2515::MASK0, false, 0x1FFFFFFF);
-  mcp2515.setFilter(MCP2515::RXF0, false, 0x1);
+  mcp2515.setFilter(MCP2515::RXF0, false, BaseCanID+3);
 
   mcp2515.setNormalMode();
   Serial.println("DONE.");
@@ -173,7 +182,7 @@ void loop() {
   outputValue2 = map(sensorValue2, 0, 1023, 0, 100);  //Scaling for 0-100 %
 
   // print the results to the Serial Monitor:
-  Serial.print("Dig1 = ");
+  /*Serial.print("Dig1 = ");
   Serial.print(reading1);
   Serial.print(" Dig2 = ");
   Serial.print(reading2);
@@ -185,6 +194,7 @@ void loop() {
   Serial.print(outputValue2);
   Serial.print("\t Int = ");
   Serial.println(interrupt);
+  */
 
   //Prepare CAN message
   
@@ -204,9 +214,10 @@ void loop() {
   canMsg3.data[0] = highByte(sensorValue);
   canMsg3.data[1] = lowByte(sensorValue);
 
+ /*
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
   
-  if (outputValue2 < 20){
+ if (outputValue2 < 20){
     digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
@@ -222,7 +233,7 @@ void loop() {
     digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
     digitalWrite(CHList[2].SwitchOutputChannel, true);  // felsök denna!
-  }
+  }*/
 
 
 
@@ -236,20 +247,44 @@ void loop() {
     uint8_t irq = mcp2515.getInterrupts();
 
     if (irq & MCP2515::CANINTF_RX0IF) {
-      if (mcp2515.readMessage(MCP2515::RXB0, &frame) == MCP2515::ERROR_OK) {
+      if (mcp2515.readMessage(MCP2515::RXB0, &ctrlMsg) == MCP2515::ERROR_OK) {
         // frame contains received from RXB0 message
-        Serial.print(" RXB0 ");
+        ctrlMsgRecieved = true;
       }
     }
 
-    if (irq & MCP2515::CANINTF_RX1IF) {
-      if (mcp2515.readMessage(MCP2515::RXB1, &frame) == MCP2515::ERROR_OK) {
+    /*if (irq & MCP2515::CANINTF_RX1IF) {
+      if (mcp2515.readMessage(MCP2515::RXB1, &ctrlMsg) == MCP2515::ERROR_OK) {
         // frame contains received from RXB1 message
         Serial.print(" RXB1 ");
       }
     }
     Serial.print(" Rx msg! ");
-    Serial.println(irq);
+    Serial.println(irq);*/
   }
+
+  if (ctrlMsgRecieved) decodeCtrlMsg(ctrlMsg);
+
   delay(float(1) / UpdateRate * 1000);  //Crude wait, should use a dynamic time offset depending.
+}
+
+void decodeCtrlMsg(can_frame frame){
+  ctrlMsgRecieved = false;
+  
+  ResetFuseCh4  = bitRead(frame.data[0],0);
+  ResetFuseCh3  = bitRead(frame.data[0],1);
+  ResetFuseCh2  = bitRead(frame.data[0],2);
+  ResetFuseCh1  = bitRead(frame.data[0],3);
+  ControlCh4    = bitRead(frame.data[0],4);
+  digitalWrite(CHList[3].SwitchOutputChannel, ControlCh4);  // Set Default state
+  ControlCh3    = bitRead(frame.data[0],5);
+  digitalWrite(CHList[2].SwitchOutputChannel, ControlCh3);  // Set Default state
+  ControlCh2    = bitRead(frame.data[0],6);
+  digitalWrite(CHList[1].SwitchOutputChannel, ControlCh2);  // Set Default state
+  ControlCh1    = bitRead(frame.data[0],7);
+  digitalWrite(CHList[0].SwitchOutputChannel, ControlCh1);  // Set Default state
+  Serial.print(" ResetFuseCh4: ");
+  Serial.print(ResetFuseCh4);
+  Serial.print(" ControlCh1: ");
+  Serial.print(ControlCh1);
 }
