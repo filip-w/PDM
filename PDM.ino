@@ -15,6 +15,7 @@ struct OutputChannel {
   float Ratedcurrent;
   float timeToBlow;
   ACS712 ACS;
+  int canControlSignalOffset;
 };
 
 struct can_frame canMsg1;
@@ -71,10 +72,10 @@ int sensorValue4 = 0;  // value read from the pot
 
 MCP2515 mcp2515(CAN_ChipSelect);
 OutputChannel CHList[4] = {
-  { 3, 5, 1, (A0, 5.0, 1023, 100) },
-  { 6, 5, 1, (A1, 5.0, 1023, 100) },
-  { 5, 5, 1, (A2, 5.0, 1023, 100) },
-  { 4, 5, 1, (A3, 5.0, 1023, 100) },
+  { 3, 5, 1, (A0, 5.0, 1023, 100), 7 },
+  { 6, 5, 1, (A1, 5.0, 1023, 100), 6 },
+  { 5, 5, 1, (A2, 5.0, 1023, 100), 5 },
+  { 4, 5, 1, (A3, 5.0, 1023, 100), 4 },
 };
 
 ACS712 ACS0(A0, 5.0, 1023, 100);
@@ -275,16 +276,9 @@ void decodeCtrlMsg(can_frame frame){
   ResetFuseCh3  = bitRead(frame.data[0],1);
   ResetFuseCh2  = bitRead(frame.data[0],2);
   ResetFuseCh1  = bitRead(frame.data[0],3);
-  ControlCh4    = bitRead(frame.data[0],4);
-  digitalWrite(CHList[3].SwitchOutputChannel, ControlCh4);  // Set Default state
-  ControlCh3    = bitRead(frame.data[0],5);
-  digitalWrite(CHList[2].SwitchOutputChannel, ControlCh3);  // Set Default state
-  ControlCh2    = bitRead(frame.data[0],6);
-  digitalWrite(CHList[1].SwitchOutputChannel, ControlCh2);  // Set Default state
-  ControlCh1    = bitRead(frame.data[0],7);
-  digitalWrite(CHList[0].SwitchOutputChannel, ControlCh1);  // Set Default state
-  Serial.print(" ResetFuseCh4: ");
-  Serial.print(ResetFuseCh4);
-  Serial.print(" ControlCh1: ");
-  Serial.print(ControlCh1);
+
+  for (int i = 0; i <= 4; i++) {
+    digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
+  }
+
 }
