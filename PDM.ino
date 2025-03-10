@@ -16,6 +16,8 @@ struct OutputChannel {
   float timeToBlow;
   ACS712 ACS;
   int canControlSignalOffset;
+  int canFuseTrippedOffset;
+  bool fusedTripped;
 };
 
 struct can_frame canMsg1;
@@ -72,10 +74,10 @@ int sensorValue4 = 0;  // value read from the pot
 
 MCP2515 mcp2515(CAN_ChipSelect);
 OutputChannel CHList[4] = {
-  { 3, 5, 1, (A0, 5.0, 1023, 100), 7 },
-  { 6, 5, 1, (A1, 5.0, 1023, 100), 6 },
-  { 5, 5, 1, (A2, 5.0, 1023, 100), 5 },
-  { 4, 5, 1, (A3, 5.0, 1023, 100), 4 },
+  { 3, 5, 1, (A0, 5.0, 1023, 100), 7, 3 ,0 },
+  { 6, 5, 1, (A1, 5.0, 1023, 100), 6, 2 ,0 },
+  { 5, 5, 1, (A2, 5.0, 1023, 100), 5, 1 ,0 },
+  { 4, 5, 1, (A3, 5.0, 1023, 100), 4, 0 ,0 },
 };
 
 ACS712 ACS0(A0, 5.0, 1023, 100);
@@ -271,14 +273,14 @@ void loop() {
 
 void decodeCtrlMsg(can_frame frame){
   ctrlMsgRecieved = false;
-  
-  ResetFuseCh4  = bitRead(frame.data[0],0);
-  ResetFuseCh3  = bitRead(frame.data[0],1);
-  ResetFuseCh2  = bitRead(frame.data[0],2);
-  ResetFuseCh1  = bitRead(frame.data[0],3);
-
   for (int i = 0; i <= 4; i++) {
-    digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
+    
+
+    if (!CHList[i].fusedTripped) { //fuse not tripped? Then send demand
+      digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
+    }else { //fuse tripped? only listen for fuse reset demand
+      CHList[i].fusedTripped = bitRead(frame.data[0],CHList[i].canFuseTrippedOffset);
+    }
   }
 
 }
