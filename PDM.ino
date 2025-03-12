@@ -9,6 +9,7 @@
 #define UpdateRate 10  //CAN-message update rate in Hz.
 #define serialDebug false
 #define defaultOutputState LOW
+#define maxSystemCurrent 10000 //mA
 
 struct OutputChannel {
   int SwitchOutputChannel;
@@ -36,6 +37,8 @@ int ControlCh1    = 0;
 int ControlCh2    = 0;
 int ControlCh3    = 0;
 int ControlCh4    = 0;
+
+int totalSystemActCurrent = 0;
 
 //CAN interrupt
 void irqHandler() {
@@ -156,6 +159,13 @@ void loop() {
   int mA1 = ACS1.mA_DC();
   int mA2 = ACS2.mA_DC();
   int mA3 = ACS3.mA_DC();
+  totalSystemActCurrent = mA0 + mA1 + mA2 + mA3;
+  if (totalSystemActCurrent > maxSystemCurrent) { //total current over system limit? tripp all fuses
+    for (int i = 0; i <= 4; i++) {
+      CHList[i].fusedTripped = true;
+      digitalWrite(CHList[i].SwitchOutputChannel, false);
+    }
+  }
 
   canMsg2.data[0] = (mA0 >> 8);
   canMsg2.data[1] = (mA0 & 0xFF);
@@ -274,8 +284,6 @@ void loop() {
 void decodeCtrlMsg(can_frame frame){
   ctrlMsgRecieved = false;
   for (int i = 0; i <= 4; i++) {
-    
-
     if (!CHList[i].fusedTripped) { //fuse not tripped? Then send demand
       digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
     }else { //fuse tripped? only listen for fuse reset demand
