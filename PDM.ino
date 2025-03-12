@@ -19,6 +19,7 @@ struct OutputChannel {
   int canControlSignalOffset;
   int canFuseTrippedOffset;
   bool fusedTripped;
+  int actualCurrent;
 };
 
 struct can_frame canMsg1;
@@ -77,10 +78,10 @@ int sensorValue4 = 0;  // value read from the pot
 
 MCP2515 mcp2515(CAN_ChipSelect);
 OutputChannel CHList[4] = {
-  { 3, 5, 1, (A0, 5.0, 1023, 100), 7, 3 ,0 },
-  { 6, 5, 1, (A1, 5.0, 1023, 100), 6, 2 ,0 },
-  { 5, 5, 1, (A2, 5.0, 1023, 100), 5, 1 ,0 },
-  { 4, 5, 1, (A3, 5.0, 1023, 100), 4, 0 ,0 },
+  { 3, 6000, 1, (A0, 5.0, 1023, 100), 7, 3 ,0 },
+  { 6, 6000, 1, (A1, 5.0, 1023, 100), 6, 2 ,0 },
+  { 5, 6000, 1, (A2, 5.0, 1023, 100), 5, 1 ,0 },
+  { 4, 6000, 1, (A3, 5.0, 1023, 100), 4, 0 ,0 },
 };
 
 ACS712 ACS0(A0, 5.0, 1023, 100);
@@ -155,11 +156,21 @@ void setup() {
 }
 
 void loop() {
-  int mA0 = ACS0.mA_DC();
-  int mA1 = ACS1.mA_DC();
-  int mA2 = ACS2.mA_DC();
-  int mA3 = ACS3.mA_DC();
-  totalSystemActCurrent = mA0 + mA1 + mA2 + mA3;
+
+  CHList[0].actualCurrent = ACS0.mA_DC();
+  CHList[1].actualCurrent = ACS1.mA_DC();
+  CHList[2].actualCurrent = ACS2.mA_DC();
+  CHList[3].actualCurrent = ACS3.mA_DC();
+
+  for (int i = 0; i <= 4; i++) {
+    if (CHList[i].actualCurrent > CHList[i].Ratedcurrent){
+      CHList[i].fusedTripped = true;
+      digitalWrite(CHList[i].SwitchOutputChannel, false);
+    }
+  }
+
+  totalSystemActCurrent = CHList[0].actualCurrent + CHList[1].actualCurrent + CHList[2].actualCurrent + CHList[3].actualCurrent;
+
   if (totalSystemActCurrent > maxSystemCurrent) { //total current over system limit? tripp all fuses
     for (int i = 0; i <= 4; i++) {
       CHList[i].fusedTripped = true;
@@ -167,14 +178,14 @@ void loop() {
     }
   }
 
-  canMsg2.data[0] = (mA0 >> 8);
-  canMsg2.data[1] = (mA0 & 0xFF);
-  canMsg2.data[2] = (mA1 >> 8);
-  canMsg2.data[3] = (mA1 & 0xFF);
-  canMsg2.data[4] = (mA2 >> 8);
-  canMsg2.data[5] = (mA2 & 0xFF);
-  canMsg2.data[6] = (mA3 >> 8);
-  canMsg2.data[7] = (mA3 & 0xFF);
+  canMsg2.data[0] = (CHList[0].actualCurrent >> 8);
+  canMsg2.data[1] = (CHList[0].actualCurrent & 0xFF);
+  canMsg2.data[2] = (CHList[1].actualCurrent >> 8);
+  canMsg2.data[3] = (CHList[1].actualCurrent & 0xFF);
+  canMsg2.data[4] = (CHList[2].actualCurrent >> 8);
+  canMsg2.data[5] = (CHList[2].actualCurrent & 0xFF);
+  canMsg2.data[6] = (CHList[3].actualCurrent >> 8);
+  canMsg2.data[7] = (CHList[3].actualCurrent & 0xFF);
 
   // read the analog in value:
   sensorValue = analogRead(analogInPin5);
@@ -223,9 +234,15 @@ void loop() {
   canMsg1.data[6] = lowByte(sensorValue4);
   
   //message 3 "SystemInfo"
-  //Battery Voltage 
+  //FuseTripped
+  for (int i = 0; i <= 4; i++) {
+    bitWrite(canMsg3.data[2],CHList[i].canControlSignalOffset, CHList[i].fusedTripped);
+  }
+
+  //Battery Voltage
   canMsg3.data[0] = highByte(sensorValue);
   canMsg3.data[1] = lowByte(sensorValue);
+  Serial.println(canMsg3.data[2]);
 
  /*
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
