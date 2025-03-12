@@ -1,0 +1,175 @@
+{
+  "version": 5,
+  "measurementSetup": {
+    "sources": [
+      {
+        "baseNode": {
+          "identifier": "92b13668-d2bd-4c57-9967-72a608a0b31b",
+          "name": "CAN 1",
+          "description": [
+            "Kvaser Leaf Light HS - 12368",
+            "0: CAN - 500 kbit/s, 75%"
+          ],
+          "readOnlyProperties": false,
+          "readOnlyConnections": false,
+          "disabled": false
+        },
+        "isDataGenerator": false,
+        "channelSettings": {
+          "channelNumber": 0,
+          "lockedToSerialNumber": false,
+          "deviceProductCode": "73-30130-00241-8",
+          "deviceSerialNumber": "12368",
+          "channelNumberOnDevice": 0,
+          "deviceCardType": 48,
+          "deviceCardNumber": 0,
+          "canConfiguration": {
+            "canMode": 1,
+            "accessMode": 1,
+            "silentMode": false,
+            "busSpeed": {
+              "bitRate": 500000,
+              "timeSegment1": 11,
+              "timeSegment2": 4,
+              "syncJumpWidth": 4,
+              "numberOfSamplePoints": 1,
+              "prescaler": 1
+            },
+            "busSpeedDataPhase": {
+              "bitRate": 4000000,
+              "timeSegment1": 7,
+              "timeSegment2": 2,
+              "syncJumpWidth": 2,
+              "numberOfSamplePoints": 1,
+              "prescaler": 2
+            }
+          }
+        }
+      }
+    ],
+    "dataProcessors": [
+      {
+        "baseNode": {
+          "identifier": "0b201f22-8231-4805-bb5b-6583c928b2c9",
+          "name": "Databases 1",
+          "description": [
+            "PDM.dbc"
+          ],
+          "readOnlyProperties": false,
+          "readOnlyConnections": false,
+          "disabled": false
+        },
+        "connectedNodes": [
+          "92b13668-d2bd-4c57-9967-72a608a0b31b"
+        ],
+        "databasesSettings": {
+          "databaseFiles": [
+            "C:\\temp\\repos\\PDM\\PDM.dbc"
+          ]
+        }
+      }
+    ],
+    "targets": [
+      {
+        "baseNode": {
+          "identifier": "2EE6667D-2C84-4BEB-822C-7494CC93B08E",
+          "name": "UI Streams",
+          "description": [
+            "Streams data and status to the user interface"
+          ],
+          "readOnlyProperties": true,
+          "readOnlyConnections": false,
+          "disabled": false
+        },
+        "connectedNodes": [
+          "0b201f22-8231-4805-bb5b-6583c928b2c9"
+        ]
+      },
+      {
+        "baseNode": {
+          "identifier": "92b13668-d2bd-4c57-9967-72a608a0b31b",
+          "name": "CAN 1 - Out",
+          "description": [
+            "Kvaser Leaf Light HS - 12368",
+            "0: CAN - 500 kbit/s, 75%"
+          ],
+          "readOnlyProperties": true,
+          "readOnlyConnections": true,
+          "disabled": false
+        },
+        "connectedNodes": []
+      }
+    ],
+    "language": "en"
+  },
+  "workspaces": [
+    {
+      "id": 1,
+      "title": "Workspace 1",
+      "workspacePaneId": 1
+    }
+  ],
+  "workspacePanes": [
+    {
+      "id": 1,
+      "containerData": {
+        "vertical": false,
+        "paneDataIds": [
+          3
+        ],
+        "paneRatios": [
+          1
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "componentData": {
+        "componentId": "message-trace-view",
+        "componentProps": "{\"fixedPosition\":true,\"txFilter\":null,\"channelFilter\":null,\"protocolFilter\":null,\"maxDataBytes\":null,\"columnWidths\":{},\"interpreter\":\"None\"}"
+      }
+    },
+    {
+      "id": 3,
+      "containerData": {
+        "vertical": false,
+        "paneDataIds": [
+          5,
+          2
+        ],
+        "paneRatios": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "componentData": {
+        "componentId": "can-send-view",
+        "componentProps": "{\"channelIdentifier\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"frame\":{\"id\":1283,\"data\":[0,0,0,0,0,0,0,0],\"canFrameFlags\":{\"flags\":[2]}},\"channelCollapsed\":false,\"idCollapsed\":false,\"frameCollapsed\":false}"
+      }
+    },
+    {
+      "id": 5,
+      "containerData": {
+        "vertical": true,
+        "paneDataIds": [
+          4,
+          6
+        ],
+        "paneRatios": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "componentData": {
+        "componentId": "can-bus-statistics-view",
+        "componentProps": "{\"channelId\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"channelCollapsed\":false,\"statisticsCollapsed\":false,\"statusCollapsed\":false}"
+      }
+    }
+  ]
+}

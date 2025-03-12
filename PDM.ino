@@ -2,26 +2,43 @@
 #include <mcp2515.h>
 #include <FIR.h>
 #include <ACS712.h>
+#include "SoftPWM.h"
 
 //General setup
 #define BaseCanID 0x500
 #define UpdateRate 10  //CAN-message update rate in Hz.
 #define serialDebug false
 #define defaultOutputState LOW
+#define maxSystemCurrent 10000 //mA
 
 struct OutputChannel {
   int SwitchOutputChannel;
   float Ratedcurrent;
   float timeToBlow;
   ACS712 ACS;
+  int canControlSignalOffset;
+  int canFuseTrippedOffset;
+  bool fusedTripped;
 };
 
 struct can_frame canMsg1;
 struct can_frame canMsg2;
+struct can_frame canMsg3;
 enum CAN_SPEED BaudRate;
 
 volatile bool interrupt = false;
-struct can_frame frame;
+struct can_frame ctrlMsg;
+bool ctrlMsgRecieved = false;
+int ResetFuseCh4  = 0;
+int ResetFuseCh3  = 0;
+int ResetFuseCh2  = 0;
+int ResetFuseCh1  = 0;
+int ControlCh1    = 0;
+int ControlCh2    = 0;
+int ControlCh3    = 0;
+int ControlCh4    = 0;
+
+int totalSystemActCurrent = 0;
 
 //CAN interrupt
 void irqHandler() {
@@ -52,12 +69,18 @@ const int analogInPin8 = A7;  // Analog input 3 (NC on simulator)
 int sensorValue = 0;  // value read from the pot
 int outputValue = 0;  // value output to the PWM (analog out)
 
+int sensorValue2 = 0;  // value read from the pot
+int outputValue2 = 0;  // value output to the PWM (analog out)
+
+int sensorValue3 = 0;  // value read from the pot
+int sensorValue4 = 0;  // value read from the pot
+
 MCP2515 mcp2515(CAN_ChipSelect);
 OutputChannel CHList[4] = {
-  { 3, 5, 1, (A0, 5.0, 1023, 100) },
-  { 6, 5, 1, (A1, 5.0, 1023, 100) },
-  { 5, 5, 1, (A2, 5.0, 1023, 100) },
-  { 4, 5, 1, (A3, 5.0, 1023, 100) },
+  { 3, 5, 1, (A0, 5.0, 1023, 100), 7, 3 ,0 },
+  { 6, 5, 1, (A1, 5.0, 1023, 100), 6, 2 ,0 },
+  { 5, 5, 1, (A2, 5.0, 1023, 100), 5, 1 ,0 },
+  { 4, 5, 1, (A3, 5.0, 1023, 100), 4, 0 ,0 },
 };
 
 ACS712 ACS0(A0, 5.0, 1023, 100);
@@ -66,6 +89,8 @@ ACS712 ACS2(A2, 5.0, 1023, 100);
 ACS712 ACS3(A3, 5.0, 1023, 100);
 
 void setup() {
+
+  SoftPWMBegin();
 
   pinMode(DI1, INPUT_PULLUP);
   pinMode(DI2, INPUT_PULLUP);
@@ -100,9 +125,17 @@ void setup() {
   canMsg2.can_id = canid + 1;
   canMsg2.can_dlc = 8;
 
+  canMsg3.can_id = canid + 2;
+  canMsg3.can_dlc = 8;
+
   Serial.println("Initializing CAN module...");
   mcp2515.reset();
   mcp2515.setBitrate(BaudRate, MCP_8MHZ);
+
+  //Filter out CAN configuration message
+  mcp2515.setFilterMask(MCP2515::MASK0, false, 0x1FFFFFFF);
+  mcp2515.setFilter(MCP2515::RXF0, false, BaseCanID+3);
+
   mcp2515.setNormalMode();
   Serial.println("DONE.");
 
@@ -126,6 +159,13 @@ void loop() {
   int mA1 = ACS1.mA_DC();
   int mA2 = ACS2.mA_DC();
   int mA3 = ACS3.mA_DC();
+  totalSystemActCurrent = mA0 + mA1 + mA2 + mA3;
+  if (totalSystemActCurrent > maxSystemCurrent) { //total current over system limit? tripp all fuses
+    for (int i = 0; i <= 4; i++) {
+      CHList[i].fusedTripped = true;
+      digitalWrite(CHList[i].SwitchOutputChannel, false);
+    }
+  }
 
   canMsg2.data[0] = (mA0 >> 8);
   canMsg2.data[1] = (mA0 & 0xFF);
@@ -146,8 +186,16 @@ void loop() {
   int reading2 = digitalRead(DI2);
   //int reading3 = digitalRead(CAN_Interrupt);
 
+
+    // read the analog in value:
+  sensorValue2 = analogRead(analogInPin6);
+  sensorValue3 = analogRead(analogInPin7);
+  sensorValue4 = analogRead(analogInPin8);
+  // map it to the range of the analog out:
+  outputValue2 = map(sensorValue2, 0, 1023, 0, 100);  //Scaling for 0-100 %
+
   // print the results to the Serial Monitor:
-  Serial.print("Dig1 = ");
+  /*Serial.print("Dig1 = ");
   Serial.print(reading1);
   Serial.print(" Dig2 = ");
   Serial.print(reading2);
@@ -155,15 +203,56 @@ void loop() {
   Serial.print(mA3);
   Serial.print("\t Battery reference = ");
   Serial.print(outputValue);
+  Serial.print("\t Pot = ");
+  Serial.print(outputValue2);
   Serial.print("\t Int = ");
   Serial.println(interrupt);
+  */
 
-
+  //Prepare CAN message
+  
+  //message 1 "input"
+  //Digital input
   canMsg1.data[0] = reading1;
+  //Analog input
+  canMsg1.data[1] = highByte(sensorValue2);
+  canMsg1.data[2] = lowByte(sensorValue2);
+  canMsg1.data[3] = highByte(sensorValue3);
+  canMsg1.data[4] = lowByte(sensorValue3);
+  canMsg1.data[5] = highByte(sensorValue4);
+  canMsg1.data[6] = lowByte(sensorValue4);
+  
+  //message 3 "SystemInfo"
+  //Battery Voltage 
+  canMsg3.data[0] = highByte(sensorValue);
+  canMsg3.data[1] = lowByte(sensorValue);
+
+ /*
   digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
+  
+ if (outputValue2 < 20){
+    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
+  } else if (outputValue2 >= 20 && outputValue2 < 50){
+    digitalWrite(CHList[0].SwitchOutputChannel, true);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
+  } else if (outputValue2 >= 50 && outputValue2 < 70){
+    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, true);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
+  }else {
+    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
+    digitalWrite(CHList[2].SwitchOutputChannel, true);  // felsök denna!
+  }*/
+
+
 
   mcp2515.sendMessage(&canMsg1);
   mcp2515.sendMessage(&canMsg2);
+  mcp2515.sendMessage(&canMsg3);
 
 
   if (interrupt) {
@@ -171,18 +260,35 @@ void loop() {
     uint8_t irq = mcp2515.getInterrupts();
 
     if (irq & MCP2515::CANINTF_RX0IF) {
-      if (mcp2515.readMessage(MCP2515::RXB0, &frame) == MCP2515::ERROR_OK) {
+      if (mcp2515.readMessage(MCP2515::RXB0, &ctrlMsg) == MCP2515::ERROR_OK) {
         // frame contains received from RXB0 message
+        ctrlMsgRecieved = true;
       }
     }
 
-    if (irq & MCP2515::CANINTF_RX1IF) {
-      if (mcp2515.readMessage(MCP2515::RXB1, &frame) == MCP2515::ERROR_OK) {
+    /*if (irq & MCP2515::CANINTF_RX1IF) {
+      if (mcp2515.readMessage(MCP2515::RXB1, &ctrlMsg) == MCP2515::ERROR_OK) {
         // frame contains received from RXB1 message
+        Serial.print(" RXB1 ");
       }
     }
     Serial.print(" Rx msg! ");
-    Serial.println(irq);
+    Serial.println(irq);*/
   }
+
+  if (ctrlMsgRecieved) decodeCtrlMsg(ctrlMsg);
+
   delay(float(1) / UpdateRate * 1000);  //Crude wait, should use a dynamic time offset depending.
+}
+
+void decodeCtrlMsg(can_frame frame){
+  ctrlMsgRecieved = false;
+  for (int i = 0; i <= 4; i++) {
+    if (!CHList[i].fusedTripped) { //fuse not tripped? Then send demand
+      digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
+    }else { //fuse tripped? only listen for fuse reset demand
+      CHList[i].fusedTripped = bitRead(frame.data[0],CHList[i].canFuseTrippedOffset);
+    }
+  }
+
 }
