@@ -1,8 +1,9 @@
+//trouble shoot channel 2, does not turn on?
+
 #include <SPI.h>
 #include <mcp2515.h>
 #include <FIR.h>
 #include <ACS712.h>
-#include "SoftPWM.h"
 
 //General setup
 #define BaseCanID 0x500
@@ -15,7 +16,7 @@ struct OutputChannel {
   int SwitchOutputChannel;
   float Ratedcurrent;
   float timeToBlow;
-  ACS712 ACS;
+  ACS712 *ACS;
   int canControlSignalOffset;
   int canFuseTrippedOffset;
   bool fusedTripped;
@@ -77,22 +78,22 @@ int sensorValue3 = 0;  // value read from the pot
 int sensorValue4 = 0;  // value read from the pot
 
 MCP2515 mcp2515(CAN_ChipSelect);
-OutputChannel CHList[4] = {
-  { 3, 6000, 1, (A0, 5.0, 1023, 100), 7, 3 ,0 },
-  { 6, 6000, 1, (A1, 5.0, 1023, 100), 6, 2 ,0 },
-  { 5, 6000, 1, (A2, 5.0, 1023, 100), 5, 1 ,0 },
-  { 4, 6000, 1, (A3, 5.0, 1023, 100), 4, 0 ,0 },
-};
 
 ACS712 ACS0(A0, 5.0, 1023, 100);
 ACS712 ACS1(A1, 5.0, 1023, 100);
 ACS712 ACS2(A2, 5.0, 1023, 100);
 ACS712 ACS3(A3, 5.0, 1023, 100);
 
+OutputChannel CHList[4] = {
+  { 3, 6000, 1, &ACS0, 7, 3 ,0 },
+  { 6, 6000, 1, &ACS1, 6, 2 ,0 },
+  { 5, 6000, 1, &ACS2, 5, 1 ,0 },
+  { 4, 6000, 1, &ACS3, 4, 0 ,0 },
+};
+
+
+
 void setup() {
-
-  SoftPWMBegin();
-
   pinMode(DI1, INPUT_PULLUP);
   pinMode(DI2, INPUT_PULLUP);
 
@@ -157,11 +158,12 @@ void setup() {
 
 void loop() {
 
-  CHList[0].actualCurrent = ACS0.mA_DC();
-  CHList[1].actualCurrent = ACS1.mA_DC();
-  CHList[2].actualCurrent = ACS2.mA_DC();
-  CHList[3].actualCurrent = ACS3.mA_DC();
+  //Read current from each channel
+  for (int i = 0; i <= 4; i++) {
+    CHList[i].actualCurrent = CHList[i].ACS->mA_DC();
+  }
 
+  //Is current per chennel over the rated current? if so tripp fuse
   for (int i = 0; i <= 4; i++) {
     if (CHList[i].actualCurrent > CHList[i].Ratedcurrent){
       CHList[i].fusedTripped = true;
@@ -169,9 +171,10 @@ void loop() {
     }
   }
 
+  //total current over system limit? tripp all fuses
   totalSystemActCurrent = CHList[0].actualCurrent + CHList[1].actualCurrent + CHList[2].actualCurrent + CHList[3].actualCurrent;
 
-  if (totalSystemActCurrent > maxSystemCurrent) { //total current over system limit? tripp all fuses
+  if (totalSystemActCurrent > maxSystemCurrent) { 
     for (int i = 0; i <= 4; i++) {
       CHList[i].fusedTripped = true;
       digitalWrite(CHList[i].SwitchOutputChannel, false);
@@ -205,21 +208,6 @@ void loop() {
   // map it to the range of the analog out:
   outputValue2 = map(sensorValue2, 0, 1023, 0, 100);  //Scaling for 0-100 %
 
-  // print the results to the Serial Monitor:
-  /*Serial.print("Dig1 = ");
-  Serial.print(reading1);
-  Serial.print(" Dig2 = ");
-  Serial.print(reading2);
-  Serial.print(" Current = ");
-  Serial.print(mA3);
-  Serial.print("\t Battery reference = ");
-  Serial.print(outputValue);
-  Serial.print("\t Pot = ");
-  Serial.print(outputValue2);
-  Serial.print("\t Int = ");
-  Serial.println(interrupt);
-  */
-
   //Prepare CAN message
   
   //message 1 "input"
@@ -244,28 +232,6 @@ void loop() {
   canMsg3.data[1] = lowByte(sensorValue);
   Serial.println(canMsg3.data[2]);
 
- /*
-  digitalWrite(CHList[3].SwitchOutputChannel, !reading1);  // Set Default state
-  
- if (outputValue2 < 20){
-    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
-    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
-    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
-  } else if (outputValue2 >= 20 && outputValue2 < 50){
-    digitalWrite(CHList[0].SwitchOutputChannel, true);  // Set Default state
-    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
-    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
-  } else if (outputValue2 >= 50 && outputValue2 < 70){
-    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
-    digitalWrite(CHList[1].SwitchOutputChannel, true);  // Set Default state
-    digitalWrite(CHList[2].SwitchOutputChannel, false);  // Set Default state
-  }else {
-    digitalWrite(CHList[0].SwitchOutputChannel, false);  // Set Default state
-    digitalWrite(CHList[1].SwitchOutputChannel, false);  // Set Default state
-    digitalWrite(CHList[2].SwitchOutputChannel, true);  // felsök denna!
-  }*/
-
-
 
   mcp2515.sendMessage(&canMsg1);
   mcp2515.sendMessage(&canMsg2);
@@ -282,15 +248,6 @@ void loop() {
         ctrlMsgRecieved = true;
       }
     }
-
-    /*if (irq & MCP2515::CANINTF_RX1IF) {
-      if (mcp2515.readMessage(MCP2515::RXB1, &ctrlMsg) == MCP2515::ERROR_OK) {
-        // frame contains received from RXB1 message
-        Serial.print(" RXB1 ");
-      }
-    }
-    Serial.print(" Rx msg! ");
-    Serial.println(irq);*/
   }
 
   if (ctrlMsgRecieved) decodeCtrlMsg(ctrlMsg);
