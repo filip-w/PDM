@@ -144,7 +144,7 @@ void setup() {
   for (int i = 0; i <= 4; i++) {
     pinMode(CHList[i].SwitchOutputChannel, OUTPUT);                   //Setup digital output pins
     digitalWrite(CHList[i].SwitchOutputChannel, defaultOutputState);  // Set Default state
-    //CHList[i].ACS.autoMidPoint(); // Calibrate current sensors
+    //CHList[i].ACS->autoMidPoint(); // Calibrate current sensors
   }
 
   ACS0.autoMidPoint();  // Calibrate current sensors
@@ -230,9 +230,8 @@ void loop() {
   //Battery Voltage
   canMsg3.data[0] = highByte(sensorValue);
   canMsg3.data[1] = lowByte(sensorValue);
-  Serial.println(canMsg3.data[2]);
 
-
+  //Send all messages
   mcp2515.sendMessage(&canMsg1);
   mcp2515.sendMessage(&canMsg2);
   mcp2515.sendMessage(&canMsg3);
