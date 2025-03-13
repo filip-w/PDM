@@ -17,3 +17,4 @@ Overcurrent Protection: Current measurement ensures safe operation.
 Compact and Efficient: Designed for the DIY-entusiast with jellybean parts.
 
 ![PDM](https://github.com/user-attachments/assets/044d9745-2c29-41c3-9a3b-81cb4a73fb43)
+![Skärmbild 2025-03-13 180137](https://github.com/user-attachments/assets/97fbb85b-61eb-4712-b65f-b259e37723fd)
