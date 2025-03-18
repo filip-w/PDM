@@ -1,4 +1,4 @@
-VERSION ""
+VERSION "HIPBNYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY/4/%%%/4/'%**4YYY///"
 
 
 NS_ : 
@@ -22,21 +22,13 @@ NS_ :
 	SIG_GROUP_
 	SIG_VALTYPE_
 	SIGTYPE_VALTYPE_
-	BO_TX_BU_
-	BA_DEF_REL_
-	BA_REL_
-	BA_DEF_DEF_REL_
-	BU_SG_REL_
-	BU_EV_REL_
-	BU_BO_REL_
-	SG_MUL_VAL_
 
 BS_:
 
-BU_:
+BU_: PDM ECU
 
 
-BO_ 1283 Control: 8 Vector__XXX
+BO_ 1283 Control: 8 ECU
  SG_ ResetFuseCh4 : 0|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ ResetFuseCh3 : 1|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ ResetFuseCh2 : 2|1@0+ (1,0) [0|1] "" Vector__XXX
@@ -46,27 +38,28 @@ BO_ 1283 Control: 8 Vector__XXX
  SG_ ControlCh2 : 6|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ ControlCh1 : 7|1@0+ (1,0) [0|1] "" Vector__XXX
 
-BO_ 1282 SystemInfo: 8 Vector__XXX
+BO_ 1282 SystemInfo: 8 PDM
  SG_ FuseTrippedCh4 : 20|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ FuseTrippedCh3 : 21|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ FuseTrippedCh2 : 22|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ FuseTrippedCh1 : 23|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ BatteryVoltage : 7|16@0- (0.0239257812,0) [0|24.5] "Volt" Vector__XXX
 
-BO_ 1280 Input: 8 Vector__XXX
+BO_ 1280 Input: 8 PDM
  SG_ AnalogInput3 : 47|16@0- (0.09765625,0) [0|100] "%" Vector__XXX
  SG_ AnalogInput2 : 31|16@0- (0.09765625,0) [0|100] "%" Vector__XXX
  SG_ AnalogInput1 : 15|16@0- (0.09765625,0) [0|100] "%" Vector__XXX
  SG_ DigitalInput2 : 0|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ DigitalInput1 : 1|1@0+ (1,0) [0|1] "" Vector__XXX
 
-BO_ 1281 Current: 8 Vector__XXX
+BO_ 1281 Current: 8 PDM
  SG_ currentCh4 : 55|16@0- (1,0) [0|0] "mA" Vector__XXX
  SG_ currentCh3 : 39|16@0- (1,0) [0|0] "mA" Vector__XXX
  SG_ currentCh2 : 23|16@0- (1,0) [0|0] "mA" Vector__XXX
  SG_ currentCh1 : 7|16@0- (1,0) [0|0] "mA" Vector__XXX
 
 
+EV_ fuseStatus: 0 [0|1] "" 0 1 DUMMY_NODE_VECTOR0  Vector__XXX;
 
 CM_ BO_ 1283 "Control of main output channels";
 CM_ BO_ 1282 "General information sent from PDM";
@@ -162,10 +155,14 @@ BA_DEF_DEF_  "DBName" "";
 BA_DEF_DEF_  "BusType" "CAN";
 BA_DEF_DEF_  "ProtocolType" "J1939";
 BA_DEF_DEF_  "VFrameFormat" "J1939PG";
-BA_ "BusType" "CAN";
-BA_ "DBName" "PDM";
 BA_ "VFrameFormat" BO_ 1283 0;
 BA_ "VFrameFormat" BO_ 1282 0;
 BA_ "VFrameFormat" BO_ 1280 0;
 BA_ "VFrameFormat" BO_ 1281 0;
-
+BA_ "BusType" "CAN";
+BA_ "DBName" "PDM";
+VAL_ 1282 FuseTrippedCh4 0 "not tripped" 1 "tripped" ;
+VAL_ 1282 FuseTrippedCh3 0 "not tripped" 1 "tripped" ;
+VAL_ 1282 FuseTrippedCh2 0 "not tripped" 1 "tripped" ;
+VAL_ 1282 FuseTrippedCh1 0 "not tripped" 1 "tripped" ;
+VAL_ fuseStatus 0 "not tripped" 1 "tripped" ;
