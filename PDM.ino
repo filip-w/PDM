@@ -10,16 +10,17 @@
 #define UpdateRate 10  //CAN-message update rate in Hz.
 #define serialDebug false
 #define defaultOutputState LOW
-#define maxSystemCurrent 10000 //mA
+#define maxSystemCurrent 15000 //mA
+#define controlMsgTimeout 10 //tics (x/Updaterate, 10 with 10Hz -> 1 sec) 
 
 struct OutputChannel {
   int SwitchOutputChannel;
   float Ratedcurrent;
   float timeToBlow;
-  ACS712 *ACS;
   int canControlSignalOffset;
   int canFuseTrippedOffset;
   bool fusedTripped;
+  bool fusedTrippedLatchedBit;
   int actualCurrent;
 };
 
@@ -41,6 +42,7 @@ int ControlCh3    = 0;
 int ControlCh4    = 0;
 
 int totalSystemActCurrent = 0;
+int controlMsgWatchDog = 0;
 
 //CAN interrupt
 void irqHandler() {
@@ -85,10 +87,10 @@ ACS712 ACS2(A2, 5.0, 1023, 100);
 ACS712 ACS3(A3, 5.0, 1023, 100);
 
 OutputChannel CHList[4] = {
-  { 3, 6000, 1, &ACS0, 7, 3 ,0 },
-  { 6, 6000, 1, &ACS1, 6, 2 ,0 },
-  { 5, 6000, 1, &ACS2, 5, 1 ,0 },
-  { 4, 6000, 1, &ACS3, 4, 0 ,0 },
+  { 3, 6000, 1, 7, 3 ,0 ,0 },
+  { 6, 6000, 1, 6, 2 ,0, 0 },
+  { 5, 6000, 1, 5, 1 ,0, 0 },
+  { 4, 6000, 1, 4, 0 ,0, 0 },
 };
 
 
@@ -159,11 +161,12 @@ void setup() {
 void loop() {
 
   //Read current from each channel
-  for (int i = 0; i <= 4; i++) {
-    CHList[i].actualCurrent = CHList[i].ACS->mA_DC();
-  }
+  CHList[0].actualCurrent = ACS0.mA_DC();
+  CHList[1].actualCurrent = ACS1.mA_DC();
+  CHList[2].actualCurrent = ACS2.mA_DC();
+  CHList[3].actualCurrent = ACS3.mA_DC();
 
-  //Is current per chennel over the rated current? if so tripp fuse
+  //Is current per channel over the rated current? if so tripp fuse
   for (int i = 0; i <= 4; i++) {
     if (CHList[i].actualCurrent > CHList[i].Ratedcurrent){
       CHList[i].fusedTripped = true;
@@ -240,7 +243,6 @@ void loop() {
   if (interrupt) {
     interrupt = false;
     uint8_t irq = mcp2515.getInterrupts();
-
     if (irq & MCP2515::CANINTF_RX0IF) {
       if (mcp2515.readMessage(MCP2515::RXB0, &ctrlMsg) == MCP2515::ERROR_OK) {
         // frame contains received from RXB0 message
@@ -249,8 +251,21 @@ void loop() {
     }
   }
 
-  if (ctrlMsgRecieved) decodeCtrlMsg(ctrlMsg);
-
+  if (ctrlMsgRecieved) {
+    decodeCtrlMsg(ctrlMsg);
+    controlMsgWatchDog = 0; //Pet the dog
+    mcp2515.clearInterrupts();
+  }
+  else {
+    if (controlMsgWatchDog < controlMsgTimeout) {
+      controlMsgWatchDog = controlMsgWatchDog +1;
+    }
+    else {
+      for (int i = 0; i <= 4; i++) {
+        digitalWrite(CHList[i].SwitchOutputChannel, defaultOutputState);  // Set Default state
+      }
+    }
+  }
   delay(float(1) / UpdateRate * 1000);  //Crude wait, should use a dynamic time offset depending.
 }
 
@@ -260,8 +275,11 @@ void decodeCtrlMsg(can_frame frame){
     if (!CHList[i].fusedTripped) { //fuse not tripped? Then send demand
       digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
     }else { //fuse tripped? only listen for fuse reset demand
-      CHList[i].fusedTripped = bitRead(frame.data[0],CHList[i].canFuseTrippedOffset);
+      if(CHList[i].fusedTrippedLatchedBit) { //only react on transition (high->low)
+        CHList[i].fusedTripped = bitRead(frame.data[0],CHList[i].canFuseTrippedOffset);
+      }
     }
+    CHList[i].fusedTrippedLatchedBit = bitRead(frame.data[0],CHList[i].canFuseTrippedOffset);
   }
 
 }

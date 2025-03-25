@@ -104,18 +104,23 @@
   },
   "workspaces": [
     {
-      "id": 1,
+      "id": 2,
+      "title": "Workspace 2",
+      "workspacePaneId": 7
+    },
+    {
+      "id": 3,
       "title": "Workspace 1",
-      "workspacePaneId": 1
+      "workspacePaneId": 9
     }
   ],
   "workspacePanes": [
     {
-      "id": 1,
+      "id": 7,
       "containerData": {
         "vertical": false,
         "paneDataIds": [
-          3
+          8
         ],
         "paneRatios": [
           1
@@ -123,19 +128,38 @@
       }
     },
     {
-      "id": 2,
+      "id": 8,
+      "componentData": {
+        "componentId": "can-periodic-send-view",
+        "componentProps": "{\"settings\":{\"channelIdentifier\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"frame\":{\"id\":1283,\"data\":[0,0,0,0,0,0,0,0],\"canFrameFlags\":{\"flags\":[2]}},\"randomInterval\":false,\"constantIntervalMs\":50,\"randomIntervalMinMs\":50,\"randomIntervalMaxMs\":500,\"numberOfMessages\":0,\"randomDataLength\":false,\"randomMessageData\":false,\"randomIdentifier\":false,\"scanIdentifier\":false,\"identifierMin\":0,\"identifierMax\":2047,\"randomBurstSize\":false,\"constantBurstSize\":1,\"randomBurstSizeMin\":1,\"randomBurstSizeMax\":5},\"channelCollapsed\":false,\"idCollapsed\":false,\"frameCollapsed\":false,\"intervalCollapsed\":false,\"nofMsgCollapsed\":true,\"burstSizeCollapsed\":true}"
+      }
+    },
+    {
+      "id": 9,
+      "containerData": {
+        "vertical": false,
+        "paneDataIds": [
+          11
+        ],
+        "paneRatios": [
+          1
+        ]
+      }
+    },
+    {
+      "id": 10,
       "componentData": {
         "componentId": "message-trace-view",
         "componentProps": "{\"fixedPosition\":true,\"txFilter\":null,\"channelFilter\":null,\"protocolFilter\":null,\"maxDataBytes\":null,\"columnWidths\":{},\"interpreter\":\"None\"}"
       }
     },
     {
-      "id": 3,
+      "id": 11,
       "containerData": {
         "vertical": false,
         "paneDataIds": [
-          5,
-          2
+          15,
+          13
         ],
         "paneRatios": [
           0.5,
@@ -144,31 +168,34 @@
       }
     },
     {
-      "id": 4,
+      "id": 12,
       "componentData": {
-        "componentId": "can-send-view",
-        "componentProps": "{\"channelIdentifier\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"frame\":{\"id\":1283,\"data\":[0,0,0,0,0,0,0,0],\"canFrameFlags\":{\"flags\":[2]}},\"channelCollapsed\":false,\"idCollapsed\":false,\"frameCollapsed\":false}"
+        "componentId": "can-periodic-send-view",
+        "componentProps": "{\"settings\":{\"channelIdentifier\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"frame\":{\"id\":1283,\"data\":[0,0,0,0,0,0,0,0],\"canFrameFlags\":{\"flags\":[2]}},\"randomInterval\":false,\"constantIntervalMs\":50,\"randomIntervalMinMs\":50,\"randomIntervalMaxMs\":500,\"numberOfMessages\":0,\"randomDataLength\":false,\"randomMessageData\":false,\"randomIdentifier\":false,\"scanIdentifier\":false,\"identifierMin\":0,\"identifierMax\":2047,\"randomBurstSize\":false,\"constantBurstSize\":1,\"randomBurstSizeMin\":1,\"randomBurstSizeMax\":5},\"channelCollapsed\":false,\"idCollapsed\":false,\"frameCollapsed\":false,\"intervalCollapsed\":false,\"nofMsgCollapsed\":false,\"burstSizeCollapsed\":false,\"periodicTransmissionId\":\"0484e785-4cd6-486d-b86e-cb889723d9b9\"}"
       }
     },
     {
-      "id": 5,
+      "id": 13,
       "containerData": {
         "vertical": true,
         "paneDataIds": [
-          4,
-          6
+          10
         ],
         "paneRatios": [
-          0.5,
-          0.5
+          1
         ]
       }
     },
     {
-      "id": 6,
-      "componentData": {
-        "componentId": "can-bus-statistics-view",
-        "componentProps": "{\"channelId\":\"92b13668-d2bd-4c57-9967-72a608a0b31b\",\"channelCollapsed\":false,\"statisticsCollapsed\":false,\"statusCollapsed\":false}"
+      "id": 15,
+      "containerData": {
+        "vertical": true,
+        "paneDataIds": [
+          12
+        ],
+        "paneRatios": [
+          1
+        ]
       }
     }
   ]
