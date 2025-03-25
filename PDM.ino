@@ -1,5 +1,3 @@
-//trouble shoot channel 2, does not turn on?
-
 #include <SPI.h>
 #include <mcp2515.h>
 #include <FIR.h>
