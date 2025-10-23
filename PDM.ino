@@ -1,4 +1,4 @@
-//Version 1.0
+//Version 1.1
 
 #include <SPI.h>
 #include <mcp2515.h>
@@ -161,10 +161,10 @@ void setup() {
 void loop() {
 
   //Read current from each channel
-  CHList[0].actualCurrent = ACS0.mA_DC();
-  CHList[1].actualCurrent = ACS1.mA_DC();
-  CHList[2].actualCurrent = ACS2.mA_DC();
-  CHList[3].actualCurrent = ACS3.mA_DC();
+  CHList[0].actualCurrent = ACS0.mA_AC_sampling();
+  CHList[1].actualCurrent = ACS1.mA_AC_sampling();
+  CHList[2].actualCurrent = ACS2.mA_AC_sampling();
+  CHList[3].actualCurrent = ACS3.mA_AC_sampling();
 
   //Is current per channel over the rated current? if so tripp fuse
   for (int i = 0; i <= 4; i++) {
@@ -273,7 +273,12 @@ void decodeCtrlMsg(can_frame frame){
   ctrlMsgRecieved = false;
   for (int i = 0; i <= 4; i++) {
     if (!CHList[i].fusedTripped) { //fuse not tripped? Then send demand
-      digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
+      if (bitRead(frame.data[0],CHList[i].canControlSignalOffset)){
+        digitalWrite(CHList[i].SwitchOutputChannel, bitRead(frame.data[0],CHList[i].canControlSignalOffset));
+      }
+      else { //if no digital demand is present, write analog value
+        analogWrite(CHList[i].SwitchOutputChannel, frame.data[i+1]);
+      }
     }else { //fuse tripped? only listen for fuse reset demand
       if(CHList[i].fusedTrippedLatchedBit) { //only react on transition (high->low)
         CHList[i].fusedTripped = bitRead(frame.data[0],CHList[i].canFuseTrippedOffset);

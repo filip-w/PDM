@@ -1,4 +1,4 @@
-VERSION "HIPBNYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY/4/%%%/4/'%**4YYY///"
+VERSION ""
 
 
 NS_ : 
@@ -22,6 +22,14 @@ NS_ :
 	SIG_GROUP_
 	SIG_VALTYPE_
 	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
 
 BS_:
 
@@ -37,6 +45,10 @@ BO_ 1283 Control: 8 ECU
  SG_ ControlCh3 : 5|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ ControlCh2 : 6|1@0+ (1,0) [0|1] "" Vector__XXX
  SG_ ControlCh1 : 7|1@0+ (1,0) [0|1] "" Vector__XXX
+ SG_ ControlCh1PWM : 15|8@0+ (0.39215686275,0) [0|100] "%" Vector__XXX
+ SG_ ControlCh2PWM : 23|8@0+ (0.39215686275,0) [0|100] "%" Vector__XXX
+ SG_ ControlCh3PWM : 31|8@0+ (0.39215686275,0) [0|100] "%" Vector__XXX
+ SG_ ControlCh4PWM : 39|8@0+ (0.39215686275,0) [0|100] "%" Vector__XXX
 
 BO_ 1282 SystemInfo: 8 PDM
  SG_ FuseTrippedCh4 : 20|1@0+ (1,0) [0|1] "" Vector__XXX
@@ -59,9 +71,13 @@ BO_ 1281 Current: 8 PDM
  SG_ currentCh1 : 7|16@0- (1,0) [0|0] "mA" Vector__XXX
 
 
+
 EV_ fuseStatus: 0 [0|1] "" 0 1 DUMMY_NODE_VECTOR0  Vector__XXX;
 
-CM_ BO_ 1283 "Control of main output channels";
+CM_ SG_ 1283 ControlCh1PWM "PWM Control channel 1, subordinate to signal ControlCh1";
+CM_ SG_ 1283 ControlCh2PWM "PWM Control channel 2, subordinate to signal ControlCh2";
+CM_ SG_ 1283 ControlCh3PWM "PWM Control channel 2, subordinate to signal ControlCh2";
+CM_ SG_ 1283 ControlCh4PWM "Channel 4 does not support PWM, send 100% to turn it on. PWM Control channel 4, subordinate to signal ControlCh4";
 CM_ BO_ 1282 "General information sent from PDM";
 CM_ BO_ 1280 "DI and AN input channels from PDM";
 CM_ BO_ 1281 "Main output channels current measurement";
@@ -155,14 +171,15 @@ BA_DEF_DEF_  "DBName" "";
 BA_DEF_DEF_  "BusType" "CAN";
 BA_DEF_DEF_  "ProtocolType" "J1939";
 BA_DEF_DEF_  "VFrameFormat" "J1939PG";
+BA_ "BusType" "CAN";
+BA_ "DBName" "PDM";
 BA_ "VFrameFormat" BO_ 1283 0;
 BA_ "VFrameFormat" BO_ 1282 0;
 BA_ "VFrameFormat" BO_ 1280 0;
 BA_ "VFrameFormat" BO_ 1281 0;
-BA_ "BusType" "CAN";
-BA_ "DBName" "PDM";
 VAL_ 1282 FuseTrippedCh4 0 "not tripped" 1 "tripped" ;
 VAL_ 1282 FuseTrippedCh3 0 "not tripped" 1 "tripped" ;
 VAL_ 1282 FuseTrippedCh2 0 "not tripped" 1 "tripped" ;
 VAL_ 1282 FuseTrippedCh1 0 "not tripped" 1 "tripped" ;
 VAL_ fuseStatus 0 "not tripped" 1 "tripped" ;
+
